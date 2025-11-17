@@ -1,0 +1,209 @@
+from kivymd.app import MDApp
+from kivymd.uix.button import MDRaisedButton
+from kivymd.uix.label import MDLabel
+from kivy_garden.mapview import MapView, MapMarker
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.popup import Popup
+from kivy.graphics import Color, Ellipse, RoundedRectangle
+
+
+class ColoredMarker(MapMarker):
+    #Marker with a colored dot instead of an image.
+    def __init__(self, category="safe", **kwargs):
+        super().__init__(**kwargs)
+        self.category = category
+        self.size = (30, 30)
+        self.draw_dot()
+
+    def draw_dot(self):
+        self.canvas.clear()
+        with self.canvas:
+            if self.category == "safe":
+                Color(0, 0.8, 0, 1)  # green
+            else:
+                Color(0.9, 0, 0, 1)  # red
+            Ellipse(pos=(self.x - 15, self.y - 15), size=self.size)
+
+    def on_pos(self, *args):
+        self.draw_dot()
+
+    def on_touch_up(self, touch):
+        if self.collide_point(*touch.pos):
+            self.show_edit_popup()
+            return True
+        return super().on_touch_up(touch)
+
+    def show_edit_popup(self):
+        box = BoxLayout(orientation="vertical", spacing=12, padding=16)
+
+        btn_safe = MDRaisedButton(
+            text="Safe",
+            md_bg_color=(1, 1, 1, 1),
+            text_color=(0, 0.8, 0, 1),
+            rounded_button=True,
+            elevation=0,
+            ripple_color=(0, 0, 0, 0.1),
+            size_hint_y=None,
+            height=48
+        )
+
+        btn_danger = MDRaisedButton(
+            text="Dangerous",
+            md_bg_color=(1, 1, 1, 1),
+            text_color=(0.9, 0, 0, 1),
+            rounded_button=True,
+            elevation=0,
+            ripple_color=(0, 0, 0, 0.1),
+            size_hint_y=None,
+            height=48
+        )
+
+        btn_delete = MDRaisedButton(
+            text="Delete",
+            md_bg_color=(1, 1, 1, 1),
+            text_color=(0.9, 0, 0, 1),
+            rounded_button=True,
+            elevation=0,
+            ripple_color=(0, 0, 0, 0.1),
+            size_hint_y=None,
+            height=48
+        )
+
+        box.add_widget(btn_safe)
+        box.add_widget(btn_danger)
+        box.add_widget(btn_delete)
+
+        popup = Popup(
+            title="",
+            content=box,
+            size_hint=(0.5, 0.35),
+            auto_dismiss=True,
+            background=''
+        )
+
+        with box.canvas.before:
+            Color(1, 1, 1, 1)
+            self.rect = RoundedRectangle(pos=box.pos, size=box.size, radius=[16])
+
+        box.bind(pos=lambda inst, val: setattr(self.rect, 'pos', inst.pos),
+                 size=lambda inst, val: setattr(self.rect, 'size', inst.size))
+
+        popup.open()
+
+        btn_safe.bind(on_release=lambda x: self.set_category("safe", popup))
+        btn_danger.bind(on_release=lambda x: self.set_category("dangerous", popup))
+        btn_delete.bind(on_release=lambda x: self.delete_marker(popup))
+
+    def set_category(self, category, popup):
+        self.category = category
+        self.draw_dot()
+        popup.dismiss()
+
+    def delete_marker(self, popup):
+        if self.parent:
+            self.parent.remove_widget(self)
+        popup.dismiss()
+
+
+class TapMapView(MapView):
+    """Custom MapView to detect taps at any zoom level."""
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.app = None
+
+    def on_touch_up(self, touch):
+        if self.collide_point(*touch.pos):
+            local_x = touch.x - self.x
+            local_y = touch.y - self.y
+            lat, lon = self.get_latlon_at(local_x, local_y)
+            if self.app:
+                self.app.show_add_dialog(lat, lon)
+            return True
+        return super().on_touch_up(touch)
+
+
+class MapApp(MDApp):
+    def build(self):
+        layout = BoxLayout(orientation="vertical")
+
+        # Instruction bar
+        top_bar = BoxLayout(size_hint_y=None, height=50, padding=10)
+        with top_bar.canvas.before:
+            Color(1, 1, 1, 1)  # White background
+            self.rect_top = RoundedRectangle(pos=top_bar.pos, size=top_bar.size, radius=[12])
+        top_bar.bind(pos=lambda inst, val: setattr(self.rect_top, 'pos', inst.pos),
+                     size=lambda inst, val: setattr(self.rect_top, 'size', inst.size))
+
+        instruction_label = MDLabel(
+            text="Tap the map to add a marker",
+            halign="center",
+            theme_text_color="Primary",
+            font_style="H6",
+            text_color=(0.5, 0, 0, 1)  # maroon text
+        )
+        top_bar.add_widget(instruction_label)
+        layout.add_widget(top_bar)
+
+        # Map
+        self.mapview = TapMapView(zoom=10, lat=13.7567, lon=121.0584)
+        self.mapview.app = self
+        layout.add_widget(self.mapview)
+
+        return layout
+
+    def show_add_dialog(self, lat, lon):
+        box = BoxLayout(orientation="vertical", spacing=12, padding=16)
+
+        btn_safe = MDRaisedButton(
+            text="Safe",
+            md_bg_color=(1, 1, 1, 1),
+            text_color=(0, 0.8, 0, 1),
+            rounded_button=True,
+            elevation=0,
+            ripple_color=(0, 0, 0, 0.1),
+            size_hint_y=None,
+            height=48
+        )
+
+        btn_danger = MDRaisedButton(
+            text="Dangerous",
+            md_bg_color=(1, 1, 1, 1),
+            text_color=(0.9, 0, 0, 1),
+            rounded_button=True,
+            elevation=0,
+            ripple_color=(0, 0, 0, 0.1),
+            size_hint_y=None,
+            height=48
+        )
+
+        box.add_widget(btn_safe)
+        box.add_widget(btn_danger)
+
+        popup = Popup(
+            title="",
+            content=box,
+            size_hint=(0.5, 0.35),
+            auto_dismiss=True,
+            background=''
+        )
+
+        with box.canvas.before:
+            Color(1, 1, 1, 1)
+            self.rect = RoundedRectangle(pos=box.pos, size=box.size, radius=[16])
+
+        box.bind(pos=lambda inst, val: setattr(self.rect, 'pos', inst.pos),
+                 size=lambda inst, val: setattr(self.rect, 'size', inst.size))
+
+        popup.open()
+
+        btn_safe.bind(on_release=lambda x: self.add_marker(lat, lon, "safe", popup))
+        btn_danger.bind(on_release=lambda x: self.add_marker(lat, lon, "dangerous", popup))
+
+    def add_marker(self, lat, lon, category, popup):
+        marker = ColoredMarker(lat=lat, lon=lon, category=category)
+        self.mapview.add_widget(marker)
+        popup.dismiss()
+
+
+if __name__ == "__main__":
+    MapApp().run()
