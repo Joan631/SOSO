@@ -74,14 +74,23 @@ ScreenManager:
         Widget:
             size_hint_y: 0.1 
 
-        Image:
-            source: "logo.png.jpg" 
-            # Changed size_hint to (1, 1) to maximize its size within the layout
-            size_hint: (1, 1) 
-            allow_stretch: True
-            keep_ratio: True 
-            mipmap: True
-            pos_hint: {'center_x': 0.5}
+        FloatLayout:
+            size_hint: (1, 1)
+            canvas.before:
+                Color:
+                    rgba: 1, 1, 1, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Image:
+                source: "img/logo.png.jpg" 
+                size_hint: (None, None)
+                size: min(self.parent.width * 0.8, self.parent.height * 0.8), min(self.parent.width * 0.8, self.parent.height * 0.8)
+                allow_stretch: True
+                keep_ratio: True 
+                mipmap: True
+                pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            
 
         MDLabel:
             text: "Loading Application..."
@@ -114,12 +123,22 @@ ScreenManager:
             padding: [dp(20), dp(10), dp(20), dp(10)]
             spacing: dp(10)
             
-            Image:
-                source: "logo.png.jpg" # Adjusted path
-                size_hint: (None, None)
-                size: dp(40), dp(40)
-                allow_stretch: True
-                mipmap: True
+            FloatLayout:
+                size_hint: (None, 1)
+                width: dp(40)
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                Image:
+                    source: "img/logo.png.jpg"
+                    size_hint: (None, None)
+                    size: dp(40), dp(40)
+                    allow_stretch: True
+                    mipmap: True
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
                 
             MDLabel:
                 text: "SAVE OTHERS [b]SIGNAL ONCE[/b]"
@@ -128,6 +147,7 @@ ScreenManager:
                 halign: 'left'
                 valign: 'center'
                 color: app.MAROON_COLOR
+                size_hint_y: 1
                 
         # 2. Main Login Content Area (Inputs and Buttons)
         MDBoxLayout:
