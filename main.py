@@ -35,30 +35,6 @@ ScreenManager:
 <MainScreen>:
     name: "main"
 
-    
-    <LoginScreen>:
-    BoxLayout:
-        orientation: "vertical"
-        padding: 50
-        spacing: 20
-
-        MDTextField:
-            id: login_username
-            hint_text: "Username"
-            pos_hint: {"center_x": 0.5}
-            size_hint_x: 0.8
-
-        MDTextField:
-            id: login_password
-            hint_text: "Password"
-            password: True
-            pos_hint: {"center_x": 0.5}
-            size_hint_x: 0.8
-
-        MDRaisedButton:
-            text: "Login"
-            pos_hint: {"center_x": 0.5}
-            on_release: app.login_user(login_username.text, login_password.text)
 
     BoxLayout:
         orientation: "vertical"
@@ -419,3 +395,4 @@ class SafeMapApp(App):
 
 if __name__ == "__main__":
     SafeMapApp().run()
+
