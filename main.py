@@ -18,6 +18,8 @@ from plyer import notification
 # External screens
 from contacts import ContactsManager
 from button_settings import ButtonSettingsScreen
+from spam import SpamDetector
+
 
 # ---------------- Custom Widgets ----------------
 class ClickableOverlay(ButtonBehavior, BoxLayout):
@@ -32,6 +34,31 @@ ScreenManager:
 
 <MainScreen>:
     name: "main"
+
+    
+    <LoginScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        padding: 50
+        spacing: 20
+
+        MDTextField:
+            id: login_username
+            hint_text: "Username"
+            pos_hint: {"center_x": 0.5}
+            size_hint_x: 0.8
+
+        MDTextField:
+            id: login_password
+            hint_text: "Password"
+            password: True
+            pos_hint: {"center_x": 0.5}
+            size_hint_x: 0.8
+
+        MDRaisedButton:
+            text: "Login"
+            pos_hint: {"center_x": 0.5}
+            on_release: app.login_user(login_username.text, login_password.text)
 
     BoxLayout:
         orientation: "vertical"
@@ -140,12 +167,13 @@ ScreenManager:
                                 size: self.size
 
             BoxLayout:
+                id: spam_placeholder
                 orientation: "vertical"
-                padding: 10
-                spacing: 10
+                padding: 5
+                spacing: 0.5
                 canvas.before:
                     Color:
-                        rgba: 1,1,1,1
+                        rgba: 0.3, 0.5, 1, 1  
                     RoundedRectangle:
                         pos: self.pos
                         size: self.size
@@ -325,7 +353,6 @@ class MainScreen(Screen):
             self.report_all()
         return True
 
-
     def cancel_countdown(self, instance):
         if self.countdown_event:
             self.countdown_event.cancel()
@@ -343,6 +370,25 @@ class MainScreen(Screen):
         message=f"Location sent! {self.current_lat}, {self.current_lon}",
         timeout=5  # seconds
         )
+
+    def on_kv_post(self, base_widget):
+        # Existing code for map marker
+        map_widget = self.ids.map_widget
+        marker = MapMarkerPopup(lat=self.current_lat, lon=self.current_lon)
+        marker.add_widget(Label(text="You are here"))
+        map_widget.add_widget(marker)
+
+        # Spam Detector
+        Clock.schedule_once(self.load_spam_detector, 0)
+
+    def load_spam_detector(self, dt):
+        placeholder = self.ids.spam_placeholder  # Add to BoxLayout
+        placeholder.clear_widgets()  
+        spam_widget = SpamDetector()
+        spam_widget.size_hint_y = .5  # Make it expand to available space
+        placeholder.add_widget(spam_widget)
+    
+        
         
     # Dashboard links
     def open_contacts(self):
