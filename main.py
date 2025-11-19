@@ -13,6 +13,7 @@ from kivy.uix.behaviors import ButtonBehavior
 from kivy.clock import Clock
 from kivy.animation import Animation
 from kivy_garden.mapview import MapView, MapMarkerPopup
+from plyer import notification
 
 # External screens
 from contacts import ContactsManager
@@ -283,26 +284,35 @@ class MainScreen(Screen):
 
     def on_sos_pressed(self, category):
         self.current_category = category
+
+        # Cancel any existing countdown
         if self.countdown_event:
             self.countdown_event.cancel()
 
-        # --- fetch countdown from settings ---
-        app = App.get_running_app()
-        try:
-            self.countdown_time = app.button_settings.get("countdown_seconds", 5)
-        except AttributeError:
-            self.countdown_time = 5
+        # Determine countdown time
+        countdown_time = getattr(App.get_running_app(), "button_settings", {}).get("countdown_seconds", 5)
+        countdown_enabled = getattr(App.get_running_app(), "button_settings", {}).get("countdown_enabled", True)
+        self.remaining_time = countdown_time if countdown_enabled else 0
 
+        if self.remaining_time == 0:
+            # Send immediately if countdown disabled
+            self.report_all()
+            return
+
+        # Otherwise, show countdown popup
         layout = BoxLayout(orientation="vertical", spacing=10)
-        self.countdown_label = Label(text=f"Sending {category} alert in {self.countdown_time} sec")
+        self.countdown_label = Label(text=f"Sending {category} alert in {self.remaining_time} sec")
         layout.add_widget(self.countdown_label)
+
         cancel_btn = Button(text="Cancel", size_hint_y=None, height=40)
         cancel_btn.bind(on_release=self.cancel_countdown)
         layout.add_widget(cancel_btn)
+
         self.popup = Popup(title=f"{category} SOS Countdown", content=layout, size_hint=(0.8,0.4))
         self.popup.open()
-        self.remaining_time = self.countdown_time
+
         self.countdown_event = Clock.schedule_interval(self._countdown_tick, 1)
+
         
     def _countdown_tick(self, dt):
         self.remaining_time -= 1
@@ -315,6 +325,7 @@ class MainScreen(Screen):
             self.report_all()
         return True
 
+
     def cancel_countdown(self, instance):
         if self.countdown_event:
             self.countdown_event.cancel()
@@ -326,6 +337,13 @@ class MainScreen(Screen):
         msg = f"EMERGENCY ({self.current_category})! Location: https://maps.google.com/?q={self.current_lat},{self.current_lon}"
         print(msg)
 
+            # Show notification
+        notification.notify(
+        title=f"SOS Sent: {self.current_category}",
+        message=f"Location sent! {self.current_lat}, {self.current_lon}",
+        timeout=5  # seconds
+        )
+        
     # Dashboard links
     def open_contacts(self):
         self.manager.current = "contacts"
