@@ -142,14 +142,14 @@ ScreenManager:
                                 pos: self.pos
                                 size: self.size
 
-            BoxLayout:
-                id: spam_placeholder
+            BoxLayout: 
+                id: spam_placeholder #changes
                 orientation: "vertical"
                 padding: 5
                 spacing: 0.5
                 canvas.before:
                     Color:
-                        rgba: 0.3, 0.5, 1, 1  
+                        rgba: 0.3, 0.5, 1, 1  #changes
                     RoundedRectangle:
                         pos: self.pos
                         size: self.size
@@ -165,7 +165,7 @@ ScreenManager:
                 ScrollView:
                     bar_width: 6
                     GridLayout:
-                        id: spam_list
+                        id: spam_list #changes
                         cols: 1
                         size_hint_y: None
                         height: self.minimum_height
@@ -354,7 +354,7 @@ class MainScreen(Screen):
         marker.add_widget(Label(text="You are here"))
         map_widget.add_widget(marker)
 
-        # Spam Detector
+        # Spam Detector #changes
         Clock.schedule_once(self.load_spam_detector, 0)
 
     def load_spam_detector(self, dt):
@@ -395,4 +395,5 @@ class SafeMapApp(App):
 
 if __name__ == "__main__":
     SafeMapApp().run()
+
 
