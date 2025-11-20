@@ -1,8 +1,12 @@
 from kivy.properties import ObjectProperty
 from kivy.uix.screenmanager import Screen
 from kivymd.app import MDApp
-from kivymd.uix.button import MDRaisedButton
+from kivymd.uix.button import MDRaisedButton, MDFlatButton
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.textfield import MDTextField
 from kivy.lang import Builder
+
+
 
 KV = """
 <ProfileScreen>:
@@ -29,14 +33,9 @@ KV = """
             mode: "rectangle"
             line_color_focus: app.MAROON_COLOR
             cursor_color: app.MAROON_COLOR
-
-        MDRaisedButton:
-            id: status_btn
-            text: "Status: " + root.user_data['status']
-            md_bg_color: app.MAROON_COLOR
-            on_release: root.cycle_status()
-            size_hint_y: None
-            height: dp(45)
+            readonly: True
+            on_focus: root.ask_edit(self, "name") if self.focus else None
+            on_text_validate: root.ask_save(self, "name")
 
         MDTextField:
             id: profile_contact
@@ -45,6 +44,9 @@ KV = """
             mode: "rectangle"
             line_color_focus: app.MAROON_COLOR
             cursor_color: app.MAROON_COLOR
+            readonly: True
+            on_focus: root.ask_edit(self, "contact_number") if self.focus else None
+            on_text_validate: root.ask_save(self, "contact_number")
 
         MDTextField:
             id: profile_location
@@ -53,18 +55,15 @@ KV = """
             mode: "rectangle"
             line_color_focus: app.MAROON_COLOR
             cursor_color: app.MAROON_COLOR
+            readonly: True
+            on_focus: root.ask_edit(self, "location") if self.focus else None
+            on_text_validate: root.ask_save(self, "location")
 
-        # Horizontal button row
         MDBoxLayout:
             orientation: "horizontal"
             spacing: dp(15)
             size_hint_y: None
             height: dp(50)
-
-            MDRaisedButton:
-                text: "Save"
-                md_bg_color: app.MAROON_COLOR
-                on_release: root.save_profile(profile_name.text, profile_contact.text, profile_location.text, root.user_data['status'])
 
             MDRaisedButton:
                 text: "Log Out"
@@ -84,26 +83,55 @@ class ProfileScreen(Screen):
         "contact_number": "(555) 123-4567",
         "location": "New York, USA"
     })
-    STATUS_OPTIONS = ["Okay", "Not Okay", "Outside", "At Home"]
 
-    def cycle_status(self):
-        """Cycle the status when the status button is clicked"""
-        current = self.user_data['status']
-        next_index = (self.STATUS_OPTIONS.index(current) + 1) % len(self.STATUS_OPTIONS)
-        self.user_data['status'] = self.STATUS_OPTIONS[next_index]
-        self.ids.status_btn.text = f"Status: {self.user_data['status']}"
-        print("Status changed:", self.user_data['status'])
+    edit_field = None  # Track which field is being edited
+    dialog = None
 
-    def save_profile(self, name, contact, location, status):
-        self.user_data['name'] = name
-        self.user_data['contact_number'] = contact
-        self.user_data['location'] = location
-        self.user_data['status'] = status
-        print("Profile saved:", self.user_data)
+    def ask_edit(self, field_widget, key):
+        """Ask if the user wants to edit the field."""
+        if not field_widget.readonly:
+            return  # Already editable
+
+        def confirm_edit(*args):
+            field_widget.readonly = False
+            field_widget.focus = True
+            self.edit_field = key
+            dialog.dismiss()
+
+        dialog = MDDialog(
+            title="Edit Field",
+            text=f"Do you want to edit {key.replace('_', ' ').title()}?",
+            buttons=[
+                MDFlatButton(text="CANCEL", on_release=lambda x: dialog.dismiss()),
+                MDFlatButton(text="EDIT", on_release=confirm_edit)
+            ]
+        )
+        dialog.open()
+
+    def ask_save(self, field_widget, key):
+        """Ask if the user wants to save the changes after editing."""
+        if self.edit_field != key:
+            return  # Not currently editing this field
+
+        def save_changes(*args):
+            self.user_data[key] = field_widget.text
+            field_widget.readonly = True
+            self.edit_field = None
+            dialog.dismiss()
+            print(f"{key} updated to:", field_widget.text)
+
+        dialog = MDDialog(
+            title="Save Changes",
+            text=f"Do you want to save changes to {key.replace('_', ' ').title()}?",
+            buttons=[
+                MDFlatButton(text="CANCEL", on_release=lambda x: dialog.dismiss()),
+                MDFlatButton(text="SAVE", on_release=save_changes)
+            ]
+        )
+        dialog.open()
 
     def go_to_login(self):
         print("Redirecting to login screen...")
-        # TODO: Replace with actual ScreenManager navigation
 
     def delete_account(self):
         print("Account deletion triggered!")
@@ -117,3 +145,4 @@ class ProfileApp(MDApp):
 
 if __name__ == "__main__":
     ProfileApp().run()
+
