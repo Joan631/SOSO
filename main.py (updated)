@@ -1,0 +1,410 @@
+# main.py
+from kivy.app import App
+from kivy.lang import Builder
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.popup import Popup
+from kivy.uix.behaviors import ButtonBehavior
+from kivy.clock import Clock
+from kivy.animation import Animation
+from kivy_garden.mapview import MapView, MapMarkerPopup
+from plyer import notification
+
+# External screens
+from contacts import ContactsManager
+from button_settings import ButtonSettingsScreen
+from spam import SpamDetector
+from Map import MapApp
+
+
+# ---------------- Custom Widgets ----------------
+class ClickableOverlay(ButtonBehavior, BoxLayout):
+    pass
+
+# ---------------- KV ----------------
+KV = """
+ScreenManager:
+    MainScreen:
+    ContactsScreen:
+    SettingsScreen:
+
+<MainScreen>:
+    name: "main"
+
+
+    BoxLayout:
+        orientation: "vertical"
+
+        # Top bar
+        BoxLayout:
+            size_hint_y: None
+            height: 50
+            spacing: 10
+            padding: 10
+            canvas.before:
+                Color:
+                    rgba: 1,1,1,1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+            Button:
+                text: "≡"
+                size_hint_x: None
+                width: 50
+                background_normal: ""
+                background_color: 0,0,0,0
+                font_size: 24
+                color: 0,0,0,1
+                on_release: root.toggle_dashboard()
+
+            Label:
+                text: "Dashboard"
+                font_size: 20
+                color: 0,0,0,1
+                halign: "left"
+                valign: "middle"
+                text_size: self.size
+
+        # Map area
+        FloatLayout:
+            id: map_region
+            size_hint_y: 0.5
+            canvas.before:
+                Color:
+                    rgba: 0,0,0,0   # fully transparent
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+            MapView:
+                id: map_widget
+                lat: root.current_lat
+                lon: root.current_lon
+                zoom: 12
+                size_hint: 1, 1
+                pos_hint: {"x":0, "y":0}
+
+            Button:
+                text: "Update"
+                size_hint: None, None
+                size: 85, 38
+                pos_hint: {"right": 0.98, "top": 0.98}
+                background_normal: ""
+                background_color: 1, 0, 0, 1
+                font_size: 14
+                color: 1,1,1,1
+                on_release: root.open_Map()
+
+        # One Tap + Spam Detector
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint_y: None
+            height: 160
+            padding: 10
+            spacing: 10
+
+            BoxLayout:
+                orientation: "vertical"
+                padding: 10
+                spacing: 10
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+
+                Label:
+                    text: "One Tap Emergency"
+                    size_hint_y: None
+                    height: 25
+                    font_size: 14
+                    color: 0,0,0,1
+
+                FloatLayout:
+                    Button:
+                        text: ""
+                        size_hint: None, None
+                        size: 70, 70
+                        pos_hint: {"center_x": 0.5, "center_y": 0.5}
+                        background_normal: ""
+                        background_color: 1, 0, 0, 1
+                        on_release: root.on_sos_pressed("ONE TAP EMERGENCY")
+                        canvas.before:
+                            Color:
+                                rgba: 1,0,0,1
+                            Ellipse:
+                                pos: self.pos
+                                size: self.size
+
+            BoxLayout:
+                id: spam_placeholder
+                orientation: "vertical"
+                padding: 5
+                spacing: 0.5
+                canvas.before:
+                    Color:
+                        rgba: 0.3, 0.5, 1, 1  
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+
+                Label:
+                    text: "Spam Detector"
+                    size_hint_y: None
+                    height: 25
+                    font_size: 14
+                    color: 0,0,0,1
+
+                ScrollView:
+                    bar_width: 6
+                    GridLayout:
+                        id: spam_list
+                        cols: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        row_default_height: 25
+                        spacing: 5
+
+        # SOS Categories
+        GridLayout:
+            cols: 2
+            size_hint_y: None
+            height: 130
+            padding: 10
+            spacing: 10
+
+            Button:
+                text: "THREATS"
+                background_normal: ""
+                background_color: 0,0.6,0,1
+                on_release: root.on_sos_pressed("THREATS")
+
+            Button:
+                text: "ACCIDENTS"
+                background_normal: ""
+                background_color: 0,0.6,0,1
+                on_release: root.on_sos_pressed("ACCIDENTS")
+
+            Button:
+                text: "FIRE"
+                background_normal: ""
+                background_color: 0,0.6,0,1
+                on_release: root.on_sos_pressed("FIRE")
+
+            Button:
+                text: "MEDICAL"
+                background_normal: ""
+                background_color: 0,0.6,0,1
+                on_release: root.on_sos_pressed("MEDICAL")
+
+    # Side Dashboard (hidden by default)
+    BoxLayout:
+        id: dashboard_menu
+        orientation: "vertical"
+        size_hint: None, 1
+        width: 0
+        pos_hint: {"x": -1}
+        padding: 10
+        spacing: 10
+        canvas.before:
+            Color:
+                rgba: 1,1,1,1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Button:
+            text: "Contacts"
+            size_hint_y: None
+            height: 40
+            on_release: root.open_contacts()
+
+        Button:
+            text: "Profile"
+            size_hint_y: None
+            height: 40
+            on_release: root.open_profile()
+
+        Button:
+            text: "Settings"
+            size_hint_y: None
+            height: 40
+            on_release: root.open_settings()
+
+        Button:
+            text: "Help"
+            size_hint_y: None
+            height: 40
+            on_release: root.open_help()
+
+<MapsScreen>:
+    name: "Map"
+    MapApp:
+
+<ContactsScreen>:
+    name: "contacts"
+    ContactsManager:
+
+<SettingsScreen>:
+    name: "settings"
+    BoxLayout:
+        orientation: "vertical"
+        Button:
+            text: "← Back"
+            size_hint_y: None
+            height: 40
+            on_release: app.root.current = "main"
+        ButtonSettingsScreen:
+"""
+
+# ------------------ Python logic ------------------
+class MainScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.current_lat = 14.5995
+        self.current_lon = 120.9842
+        self.dashboard_open = False
+        self.countdown_time = 5   # default, will override from settings
+        self.countdown_event = None
+        self.popup = None
+
+    def on_kv_post(self, base_widget):
+        map_widget = self.ids.map_widget
+        marker = MapMarkerPopup(lat=self.current_lat, lon=self.current_lon)
+        marker.add_widget(Label(text="You are here"))
+        map_widget.add_widget(marker)
+
+    def toggle_dashboard(self):
+        menu = self.ids.dashboard_menu
+        if self.dashboard_open:
+            Animation(width=0, pos_hint={"x": -1}, duration=0.3).start(menu)
+            self.dashboard_open = False
+        else:
+            Animation(width=200, pos_hint={"x": 0}, duration=0.3).start(menu)
+            self.dashboard_open = True
+
+    def on_sos_pressed(self, category):
+        self.current_category = category
+
+        # Cancel any existing countdown
+        if self.countdown_event:
+            self.countdown_event.cancel()
+
+        # Determine countdown time
+        countdown_time = getattr(App.get_running_app(), "button_settings", {}).get("countdown_seconds", 5)
+        countdown_enabled = getattr(App.get_running_app(), "button_settings", {}).get("countdown_enabled", True)
+        self.remaining_time = countdown_time if countdown_enabled else 0
+
+        if self.remaining_time == 0:
+            # Send immediately if countdown disabled
+            self.report_all()
+            return
+
+        # Otherwise, show countdown popup
+        layout = BoxLayout(orientation="vertical", spacing=10)
+        self.countdown_label = Label(text=f"Sending {category} alert in {self.remaining_time} sec")
+        layout.add_widget(self.countdown_label)
+
+        cancel_btn = Button(text="Cancel", size_hint_y=None, height=40)
+        cancel_btn.bind(on_release=self.cancel_countdown)
+        layout.add_widget(cancel_btn)
+
+        self.popup = Popup(title=f"{category} SOS Countdown", content=layout, size_hint=(0.8,0.4))
+        self.popup.open()
+
+        self.countdown_event = Clock.schedule_interval(self._countdown_tick, 1)
+
+        
+    def _countdown_tick(self, dt):
+        self.remaining_time -= 1
+        self.countdown_label.text = f"Sending {self.current_category} alert in {self.remaining_time} sec"
+        if self.remaining_time <= 0:
+            if self.countdown_event:
+                self.countdown_event.cancel()
+            if self.popup:
+                self.popup.dismiss()
+            self.report_all()
+        return True
+
+    def cancel_countdown(self, instance):
+        if self.countdown_event:
+            self.countdown_event.cancel()
+        if self.popup:
+            self.popup.dismiss()
+        print(f"{self.current_category} SOS cancelled.")
+
+    def report_all(self):
+        msg = f"EMERGENCY ({self.current_category})! Location: https://maps.google.com/?q={self.current_lat},{self.current_lon}"
+        print(msg)
+
+            # Show notification
+        notification.notify(
+        title=f"SOS Sent: {self.current_category}",
+        message=f"Location sent! {self.current_lat}, {self.current_lon}",
+        timeout=5  # seconds
+        )
+
+    def on_kv_post(self, base_widget):
+        # Existing code for map marker
+        map_widget = self.ids.map_widget
+        marker = MapMarkerPopup(lat=self.current_lat, lon=self.current_lon)
+        marker.add_widget(Label(text="You are here"))
+        map_widget.add_widget(marker)
+
+        # --- SpamDetector ---
+        Clock.schedule_once(self.load_spam_detector, 0)
+
+    def load_spam_detector(self, dt):
+        placeholder = self.ids.spam_placeholder  # Add to BoxLayout
+        placeholder.clear_widgets()  
+        spam_widget = SpamDetector()
+        spam_widget.size_hint_y = .5  # Make it expand to available space
+        placeholder.add_widget(spam_widget)
+
+   
+    
+        
+        
+    # Dashboard links
+    def open_Map(self):
+        self.manager.current = "Map" 
+
+    def open_contacts(self):
+        self.manager.current = "contacts"
+
+    def open_settings(self):
+        self.manager.current = "settings"
+
+    def open_profile(self):
+        print("Profile placeholder")
+
+    def open_help(self):
+        print("Help placeholder")
+
+class MapsScreen(Screen):
+    pass 
+
+class ContactsScreen(Screen):
+    pass  # Handled entirely in KV
+
+
+class SettingsScreen(Screen):
+    pass  # Handled entirely in KV
+
+
+class SafeMapApp(App):
+    def build(self):
+        return Builder.load_string(KV)
+
+
+if __name__ == "__main__":
+    SafeMapApp().run()
