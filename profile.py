@@ -1,210 +1,119 @@
-import kivy
-from kivy.app import App
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
-from kivy.uix.image import Image
-from kivy.metrics import dp
-from kivy.utils import get_color_from_hex # Utility for cleaner color definitions
+from kivy.properties import ObjectProperty
+from kivy.uix.screenmanager import Screen
+from kivymd.app import MDApp
+from kivymd.uix.button import MDRaisedButton
+from kivy.lang import Builder
 
-kivy.require('1.9.0')
+KV = """
+<ProfileScreen>:
+    name: "profile"
+    user_data: root.user_data
 
-class ProfileScreen(BoxLayout):
-    # Define the possible status options
+    MDBoxLayout:
+        orientation: "vertical"
+        padding: dp(30)
+        spacing: dp(20)
+        md_bg_color: 1, 1, 1, 1  # White background
+
+        MDLabel:
+            text: "USER PROFILE"
+            font_style: "H5"
+            halign: "center"
+            theme_text_color: "Custom"
+            text_color: app.MAROON_COLOR
+
+        MDTextField:
+            id: profile_name
+            hint_text: "Full Name"
+            text: root.user_data['name']
+            mode: "rectangle"
+            line_color_focus: app.MAROON_COLOR
+            cursor_color: app.MAROON_COLOR
+
+        MDRaisedButton:
+            id: status_btn
+            text: "Status: " + root.user_data['status']
+            md_bg_color: app.MAROON_COLOR
+            on_release: root.cycle_status()
+            size_hint_y: None
+            height: dp(45)
+
+        MDTextField:
+            id: profile_contact
+            hint_text: "Contact Number"
+            text: root.user_data['contact_number']
+            mode: "rectangle"
+            line_color_focus: app.MAROON_COLOR
+            cursor_color: app.MAROON_COLOR
+
+        MDTextField:
+            id: profile_location
+            hint_text: "Location"
+            text: root.user_data['location']
+            mode: "rectangle"
+            line_color_focus: app.MAROON_COLOR
+            cursor_color: app.MAROON_COLOR
+
+        # Horizontal button row
+        MDBoxLayout:
+            orientation: "horizontal"
+            spacing: dp(15)
+            size_hint_y: None
+            height: dp(50)
+
+            MDRaisedButton:
+                text: "Save"
+                md_bg_color: app.MAROON_COLOR
+                on_release: root.save_profile(profile_name.text, profile_contact.text, profile_location.text, root.user_data['status'])
+
+            MDRaisedButton:
+                text: "Log Out"
+                md_bg_color: app.MAROON_COLOR
+                on_release: root.go_to_login()
+
+            MDRaisedButton:
+                text: "Delete"
+                md_bg_color: app.MAROON_COLOR
+                on_release: root.delete_account()
+"""
+
+class ProfileScreen(Screen):
+    user_data = ObjectProperty({
+        "name": "Jane Doe",
+        "status": "Okay",
+        "contact_number": "(555) 123-4567",
+        "location": "New York, USA"
+    })
     STATUS_OPTIONS = ["Okay", "Not Okay", "Outside", "At Home"]
-    
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.orientation = 'vertical'
-        self.padding = dp(20)
-        self.spacing = dp(10)
-        
-        # Initial data storage
-        self.user_data = {
-            'name': 'Jane Doe',
-            'status': self.STATUS_OPTIONS[0], # Start with "Okay"
-            'contact_number': '(555) 123-4567', 
-            'location': 'New York, USA'
-        }
-        
-        # State tracker and widget storage
-        self.editing = False 
-        self.edit_widgets = {} # Stores Contact and Location TextInputs
 
-        self.build_ui()
-        
-    def build_ui(self):
-        self.clear_widgets()
+    def cycle_status(self):
+        """Cycle the status when the status button is clicked"""
+        current = self.user_data['status']
+        next_index = (self.STATUS_OPTIONS.index(current) + 1) % len(self.STATUS_OPTIONS)
+        self.user_data['status'] = self.STATUS_OPTIONS[next_index]
+        self.ids.status_btn.text = f"Status: {self.user_data['status']}"
+        print("Status changed:", self.user_data['status'])
 
-        # 1. Profile Logo/Image and Name
-        try:
-            # Changed source reference to 'company_logo.png'
-            self.profile_image = Image(
-                source='company_logo.png', 
-                size_hint=(None, None),
-                size=(dp(100), dp(100)),
-                pos_hint={'center_x': 0.5},
-                allow_stretch=True
-            )
-            self.add_widget(self.profile_image)
-        except Exception:
-            # Updated fallback text to [Logo Placeholder]
-            self.add_widget(Label(text='[Logo Placeholder]', size_hint_y=None, height=dp(100), markup=True))
+    def save_profile(self, name, contact, location, status):
+        self.user_data['name'] = name
+        self.user_data['contact_number'] = contact
+        self.user_data['location'] = location
+        self.user_data['status'] = status
+        print("Profile saved:", self.user_data)
 
-        # Name Input (Still Editable in the main Edit Mode)
-        self.name_input = TextInput(
-            text=self.user_data['name'], 
-            font_size=dp(24), 
-            multiline=False, 
-            size_hint_y=None, 
-            height=dp(40), 
-            readonly=True, 
-            background_color=get_color_from_hex('#F0F0F0') # Light grey background
-        )
-        self.edit_widgets['name'] = self.name_input
-        self.add_widget(self.name_input)
+    def go_to_login(self):
+        print("Redirecting to login screen...")
+        # TODO: Replace with actual ScreenManager navigation
 
-        # 2. Status Selector (Replaces Bio)
-        # Button to cycle the status quickly.
-        self.status_button = Button(
-            text=f"Status: {self.user_data['status']}",
-            font_size=dp(18),
-            size_hint_y=None, 
-            height=dp(40),
-            background_color=get_color_from_hex('#3498DB'), # Blue background
-            color=get_color_from_hex('#FFFFFF')
-        )
-        self.status_button.bind(on_press=self.cycle_status)
-        self.add_widget(self.status_button)
+    def delete_account(self):
+        print("Account deletion triggered!")
 
-        self.add_widget(Label(text='--- [ Account Details ] ---', size_hint_y=None, height=dp(20)))
+class ProfileApp(MDApp):
+    MAROON_COLOR = (0.5, 0, 0, 1)
 
-        # 3. Core Information Fields
-        self._add_info_field('Contact Number', 'contact_number') 
-        self._add_info_field('Location', 'location')
-
-        # Add a flexible spacer
-        self.add_widget(Label(text='')) 
-
-        # 4. Action Buttons
-        
-        # Edit/Save Button
-        self.edit_button = Button(
-            text='Edit Profile', 
-            size_hint_y=None, 
-            height=dp(50),
-            background_color=get_color_from_hex('#2ECC71') # Green for primary action
-        )
-        self.edit_button.bind(on_press=self.switch_mode) 
-        self.add_widget(self.edit_button)
-
-        # Log Out Button
-        logout_button = Button(
-            text='Log Out', 
-            size_hint_y=None, 
-            height=dp(50),
-            background_color=get_color_from_hex('#F39C12') # Orange/Warning color
-        )
-        # Note: In a real app, this should navigate back to a login screen.
-        logout_button.bind(on_press=App.get_running_app().stop) 
-        self.add_widget(logout_button)
-        
-        # DELETE ACCOUNT Button 
-        delete_button = Button(
-            text='DELETE ACCOUNT', 
-            size_hint_y=None, 
-            height=dp(50),
-            background_color=get_color_from_hex('#E74C3C'), # Red for destructive action
-            color=get_color_from_hex('#FFFFFF'),
-            bold=True
-        )
-        delete_button.bind(on_press=self.delete_account)
-        self.add_widget(delete_button)
-    
-    def _add_info_field(self, label_text, data_key):
-        """Helper to create and add the label/input pair for core info."""
-        container = BoxLayout(size_hint_y=None, height=dp(40), spacing=dp(10))
-        
-        # Make Label right-aligned for better visual flow
-        container.add_widget(Label(text=label_text + ':', halign='right', size_hint_x=0.3, text_size=(dp(100), dp(40))))
-        
-        input_field = TextInput(
-            text=self.user_data[data_key], 
-            halign='left', 
-            size_hint_x=0.7, 
-            multiline=False,
-            input_type='tel' if data_key == 'contact_number' else 'text',
-            readonly=True, 
-            background_color=get_color_from_hex('#F0F0F0') # Light grey background
-        )
-        
-        self.edit_widgets[data_key] = input_field
-        container.add_widget(input_field)
-        self.add_widget(container)
-
-    def cycle_status(self, instance):
-        """Cycles the user status through the predefined options."""
-        current_status = self.user_data['status']
-        try:
-            # Find the index of the current status
-            current_index = self.STATUS_OPTIONS.index(current_status)
-            # Calculate the index of the next status (wraps around using modulo)
-            next_index = (current_index + 1) % len(self.STATUS_OPTIONS)
-            new_status = self.STATUS_OPTIONS[next_index]
-            
-            # Update data and button text
-            self.user_data['status'] = new_status
-            instance.text = f"Status: {new_status}"
-            print(f"Status changed to: {new_status}")
-            
-        except ValueError:
-            # Should only happen if status is somehow corrupt; reset to first option
-            self.user_data['status'] = self.STATUS_OPTIONS[0]
-            instance.text = f"Status: {self.STATUS_OPTIONS[0]}"
-
-
-    def switch_mode(self, instance):
-        """Toggles the UI between View Mode and Edit Mode for Contact and Location."""
-        if not self.editing:
-            # --- Entering Edit Mode ---
-            self.editing = True
-            instance.text = 'Save Changes'
-            instance.background_color = get_color_from_hex('#3498DB') # Blue when saving
-            
-            # Make TextInputs editable
-            for key, widget in self.edit_widgets.items():
-                widget.readonly = False
-                widget.background_color = get_color_from_hex('#FFFFFF') # White for active input
-            
-        else:
-            # --- Exiting Edit Mode (Saving) ---
-            self.editing = False
-            instance.text = 'Edit Profile'
-            instance.background_color = get_color_from_hex('#2ECC71') # Green when in view mode
-            
-            # Update data, disable editing, and revert background
-            for key, widget in self.edit_widgets.items():
-                self.user_data[key] = widget.text
-                widget.readonly = True
-                widget.background_color = get_color_from_hex('#F0F0F0') # Light grey background
-                
-            print("Changes Saved:", self.user_data)
-            
-    def delete_account(self, instance):
-        """Placeholder for the account deletion logic."""
-        # TODO: In a real application, you would add a confirmation popup here.
-        print("\n!!! ACCOUNT DELETION TRIGGERED !!!")
-        print("--- Initiating user data cleanup and application shutdown. ---")
-        
-        # For this example, we'll just stop the app after a simulated deletion.
-        # In a real app, you would perform the deletion then navigate to a start screen.
-        App.get_running_app().stop()
-
-class ProfileApp(App):
     def build(self):
-        self.title = 'Editable User Profile'
+        Builder.load_string(KV)
         return ProfileScreen()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ProfileApp().run()
