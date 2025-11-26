@@ -1,148 +1,102 @@
-from kivy.properties import ObjectProperty
+import json
 from kivy.uix.screenmanager import Screen
 from kivymd.app import MDApp
-from kivymd.uix.button import MDRaisedButton, MDFlatButton
 from kivymd.uix.dialog import MDDialog
-from kivymd.uix.textfield import MDTextField
-from kivy.lang import Builder
-
-
-
-KV = """
-<ProfileScreen>:
-    name: "profile"
-    user_data: root.user_data
-
-    MDBoxLayout:
-        orientation: "vertical"
-        padding: dp(30)
-        spacing: dp(20)
-        md_bg_color: 1, 1, 1, 1  # White background
-
-        MDLabel:
-            text: "USER PROFILE"
-            font_style: "H5"
-            halign: "center"
-            theme_text_color: "Custom"
-            text_color: app.MAROON_COLOR
-
-        MDTextField:
-            id: profile_name
-            hint_text: "Full Name"
-            text: root.user_data['name']
-            mode: "rectangle"
-            line_color_focus: app.MAROON_COLOR
-            cursor_color: app.MAROON_COLOR
-            readonly: True
-            on_focus: root.ask_edit(self, "name") if self.focus else None
-            on_text_validate: root.ask_save(self, "name")
-
-        MDTextField:
-            id: profile_contact
-            hint_text: "Contact Number"
-            text: root.user_data['contact_number']
-            mode: "rectangle"
-            line_color_focus: app.MAROON_COLOR
-            cursor_color: app.MAROON_COLOR
-            readonly: True
-            on_focus: root.ask_edit(self, "contact_number") if self.focus else None
-            on_text_validate: root.ask_save(self, "contact_number")
-
-        MDTextField:
-            id: profile_location
-            hint_text: "Location"
-            text: root.user_data['location']
-            mode: "rectangle"
-            line_color_focus: app.MAROON_COLOR
-            cursor_color: app.MAROON_COLOR
-            readonly: True
-            on_focus: root.ask_edit(self, "location") if self.focus else None
-            on_text_validate: root.ask_save(self, "location")
-
-        MDBoxLayout:
-            orientation: "horizontal"
-            spacing: dp(15)
-            size_hint_y: None
-            height: dp(50)
-
-            MDRaisedButton:
-                text: "Log Out"
-                md_bg_color: app.MAROON_COLOR
-                on_release: root.go_to_login()
-
-            MDRaisedButton:
-                text: "Delete"
-                md_bg_color: app.MAROON_COLOR
-                on_release: root.delete_account()
-"""
+from kivymd.uix.button import MDTextButton, MDRaisedButton
+from accounts import load_accounts, save_accounts
 
 class ProfileScreen(Screen):
-    user_data = ObjectProperty({
-        "name": "Jane Doe",
-        "status": "Okay",
-        "contact_number": "(555) 123-4567",
-        "location": "New York, USA"
-    })
+    user_data = {}
 
-    edit_field = None  # Track which field is being edited
-    dialog = None
+    def on_pre_enter(self):
+        """Fetch latest app-level user data and populate fields."""
+        app = MDApp.get_running_app()
+        self.user_data = app.current_user_data or {}
+        self.populate_fields()
 
-    def ask_edit(self, field_widget, key):
-        """Ask if the user wants to edit the field."""
-        if not field_widget.readonly:
-            return  # Already editable
+    def populate_fields(self):
+        self.ids.profile_name.text = self.user_data.get("full name", "")
+        self.ids.profile_contact.text = self.user_data.get("contact_number", "")
+        self.ids.profile_location.text = self.user_data.get("location", "")
 
-        def confirm_edit(*args):
-            field_widget.readonly = False
-            field_widget.focus = True
-            self.edit_field = key
-            dialog.dismiss()
+    # ---------------- Editing ----------------
+    def ask_edit(self, field, key):
+        """Make a field editable."""
+        field.readonly = False
 
-        dialog = MDDialog(
-            title="Edit Field",
-            text=f"Do you want to edit {key.replace('_', ' ').title()}?",
-            buttons=[
-                MDFlatButton(text="CANCEL", on_release=lambda x: dialog.dismiss()),
-                MDFlatButton(text="EDIT", on_release=confirm_edit)
-            ]
-        )
-        dialog.open()
+    def ask_save(self, field, key):
+        """Save edited value back to user data and storage."""
+        value = field.text.strip()
+        if value:
+            self.user_data[key] = value
+            self.update_user_data()
+        field.readonly = True
 
-    def ask_save(self, field_widget, key):
-        """Ask if the user wants to save the changes after editing."""
-        if self.edit_field != key:
-            return  # Not currently editing this field
+    def update_user_data(self):
+        """Sync local user_data with app-level data and save."""
+        app = MDApp.get_running_app()
+        app.current_user_data = self.user_data
 
-        def save_changes(*args):
-            self.user_data[key] = field_widget.text
-            field_widget.readonly = True
-            self.edit_field = None
-            dialog.dismiss()
-            print(f"{key} updated to:", field_widget.text)
+        # Persist changes in accounts file
+        accounts = load_accounts()
+        username = None
+        for uname, data in accounts.items():
+            if data.get("contact_number") == self.user_data.get("contact_number"):
+                username = uname
+                break
 
-        dialog = MDDialog(
-            title="Save Changes",
-            text=f"Do you want to save changes to {key.replace('_', ' ').title()}?",
-            buttons=[
-                MDFlatButton(text="CANCEL", on_release=lambda x: dialog.dismiss()),
-                MDFlatButton(text="SAVE", on_release=save_changes)
-            ]
-        )
-        dialog.open()
+        if username:
+            accounts[username] = self.user_data
+            save_accounts(accounts)
 
+    # ---------------- Logout ----------------
     def go_to_login(self):
-        print("Redirecting to login screen...")
+        """Logs out the current user."""
+        app = MDApp.get_running_app()
+        app.current_user_data = None
+        self.user_data = {}
+        self.manager.current = "login"
 
+    # ---------------- Delete Account ----------------
     def delete_account(self):
-        print("Account deletion triggered!")
+        """Ask confirmation before deleting account and remove from storage."""
+        def cancel_delete(instance):
+            dialog.dismiss()
 
-class ProfileApp(MDApp):
-    MAROON_COLOR = (0.5, 0, 0, 1)
+        def confirm_delete(instance):
+            app = MDApp.get_running_app()
+            accounts = load_accounts()
+            username_to_delete = None
+            for uname, udata in accounts.items():
+                if udata == app.current_user_data:
+                    username_to_delete = uname
+                    break
 
-    def build(self):
-        Builder.load_string(KV)
-        return ProfileScreen()
+            if username_to_delete:
+                del accounts[username_to_delete]
+                save_accounts(accounts)
+                self.show_message("Account deleted successfully.")
+            app.current_user_data = None
+            self.user_data = {}
+            dialog.dismiss()
+            self.manager.current = "login"
 
-if __name__ == "__main__":
-    ProfileApp().run()
+        dialog = MDDialog(
+            title="Confirm Delete",
+            text="Are you sure you want to delete your account? This action cannot be undone.",
+            buttons=[
+                MDTextButton(text="CANCEL", on_release=cancel_delete),
+                MDRaisedButton(
+                    text="DELETE",
+                    md_bg_color=MDApp.get_running_app().MAROON_COLOR,
+                    on_release=confirm_delete
+                )
+            ]
+        )
+        dialog.open()
 
+    # ---------------- Helper ----------------
+    def show_message(self, message):
+        """Show a simple dialog message."""
+        dialog = MDDialog(text=message, size_hint=(0.8, None), height=150)
+        dialog.open()

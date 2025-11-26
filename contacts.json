@@ -1,1 +1,10 @@
-[]
+[
+    {
+        "name": "Joan",
+        "phone": "09305343575",
+        "categories": [
+            "FIRE",
+            "ONE TAP EMERGENCY"
+        ]
+    }
+]
