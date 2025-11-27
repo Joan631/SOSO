@@ -741,6 +741,24 @@ ScreenManager:
                 pos: self.pos
                 size: self.size
 
+    # Logo Section
+        BoxLayout:
+            size_hint_y: None
+            height: 80
+            padding: 10
+            
+            Image:
+                source: "logo.png" 
+                size_hint: None, None
+                size: 60, 60
+                pos_hint: {"center_x": 0.5, "center_y": 0.5}
+                allow_stretch: True
+                keep_ratio: True
+        
+        Widget:
+            size_hint_y: None
+            height: 10
+
         Button:
             text: "Contacts"
             size_hint_y: None
@@ -1731,3 +1749,4 @@ class SpamScreen(Screen):
 
 if __name__ == "__main__":
     LoginApp().run()
+
