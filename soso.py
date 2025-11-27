@@ -435,33 +435,41 @@ ScreenManager:
         # Top bar
         BoxLayout:
             size_hint_y: None
-            height: 50
-            spacing: 10
-            padding: 10
+            height: 60
+            spacing: 0
+            padding: [15, 10, 15, 10]
             canvas.before:
                 Color:
-                    rgba: 1,1,1,1
+                    rgba: 0.2, 0.2, 0.2, 1
                 Rectangle:
                     pos: self.pos
                     size: self.size
 
+             # Logo (clickable to open menu)
             Button:
-                text: "≡"
                 size_hint_x: None
                 width: 50
                 background_normal: ""
                 background_color: 0,0,0,0
-                font_size: 24
-                color: 0,0,0,1
                 on_release: root.toggle_dashboard()
+                   
+                    Image:
+                    source: "logo.png.jpg"
+                    size_hint: None, None
+                    size: 40, 40
+                    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+                    allow_stretch: True
+                    keep_ratio: True
 
             Label:
-                text: "Dashboard"
-                font_size: 20
-                color: 0,0,0,1
+                text: "SAVE LIVES, SIGNAL ONCE"
+                font_size: 18
+                bold: True
+                color: 1,1,1,1
                 halign: "left"
                 valign: "middle"
                 text_size: self.size
+                padding: [15, 0]
 
         # Map area
         FloatLayout:
@@ -521,67 +529,77 @@ ScreenManager:
         BoxLayout:
             orientation: "horizontal"
             size_hint_y: None
-            height: 160
-            padding: 10
+            height: 140
+            padding: [10, 5, 10, 5]
             spacing: 10
 
             BoxLayout:
                 orientation: "vertical"
-                padding: 10
-                spacing: 10
-                canvas.before:
-                    Color:
-                        rgba: 1,1,1,1
-                    RoundedRectangle:
-                        pos: self.pos
-                        size: self.size
-                        radius: [20]
+                padding: 5
+                spacing: 2
+                pos: root.pos
+                    size: root.size
+
+                    Widget:
+                        size_hint_y: None
+                        height: 10
 
                 Label:
                     text: "One Tap Emergency"
                     size_hint_y: None
                     height: 25
-                    font_size: 14
-                    color: 0,0,0,1
+                    font_size: 16
+                    bold: True
+                    color: 1,1,1,1
 
                 FloatLayout:
                     Button:
                         text: ""
+                        height: 25
+                        font_size: 16
+                        bold: True
+                        color: 1,1,1,1
                         size_hint: None, None
-                        size: 70, 70
-                        pos_hint: {"center_x": 0.5, "center_y": 0.5}
-                        background_normal: ""
-                        background_color: 1, 0, 0, 1
+                        width: 120
+                        height: 120
+                        background_color: 0,0,0,0
+                        background_normal: ''
                         on_release: root.on_sos_pressed("ONE TAP EMERGENCY")
                         canvas.before:
                             Color:
-                                rgba: 1,0,0,1
+                                rgba: 0.85, 0.1, 0.1, 1
                             Ellipse:
                                 pos: self.pos
                                 size: self.size
 
             BoxLayout:
                 id: spam_placeholder
-                orientation: "vertical"
-                padding: 5
+                orientation: "horizontal"
+                size_hint_y: None
+                height: 140
+                padding: [10, 5, 10, 5]
                 spacing: 10
                 canvas.before:
                     Color:
-                        rgba: 0.3, 0.5, 1, 1  
+                        rgba: 0.2, 0.2, 0.2, 1
                     RoundedRectangle:
                         pos: self.pos
                         size: self.size
-                        radius: [20]
+                        radius: [15]
+
+                
 
                 # ------- HEADER -------
                 Label:
                     id: header
                     text: "Spam: 0 | Threats: 0"
                     size_hint_y: None
-                    height: 40
-                    font_size: 18
+                    height: 30
+                    font_size: 12
                     bold: True
-                    color: 0,0,0,1
+                    color: 1,1,1,1
+                    halign: "center"
+                    valign: "middle"
                     on_touch_down:
                         if self.collide_point(*args[1].pos): app.root.get_screen('main').on_header_click()
 
@@ -603,40 +621,80 @@ ScreenManager:
                         cols: 1
                         size_hint_y: None
                         height: self.minimum_height
-                        row_default_height: 35
-                        spacing: 7
+                        row_default_height: 25
+                        spacing: 5
 
         # SOS Categories
         GridLayout:
             cols: 2
             size_hint_y: None
-            height: 130
-            padding: 10
+            height: 150
+            padding: [10, 5, 10, 10]
             spacing: 10
 
             Button:
                 text: "THREATS"
-                background_normal: ""
-                background_color: 0,0.6,0,1
+                background_color: 0.7, 0.1, 0.1, 1
+                background_normal: ''
+                font_size: 16
+                bold: True
                 on_release: root.on_sos_pressed("THREATS")
+                canvas.before:
+                    Color:
+                        rgba: 0.7, 0.1, 0.1, 1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [12]
+                color: 1, 1, 1, 1
 
             Button:
                 text: "ACCIDENTS"
-                background_normal: ""
-                background_color: 0,0.6,0,1
+                background_color: 0.7, 0.1, 0.1, 1
+                background_normal: ''
+                font_size: 16
+                bold: True
                 on_release: root.on_sos_pressed("ACCIDENTS")
+                canvas.before:
+                    Color:
+                        rgba: 0.7, 0.1, 0.1, 1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [12]
+                color: 1, 1, 1, 1
 
             Button:
                 text: "FIRE"
-                background_normal: ""
-                background_color: 0,0.6,0,1
+                background_color: 0.7, 0.1, 0.1, 1
+                background_normal: ''
+                font_size: 16
+                bold: True
                 on_release: root.on_sos_pressed("FIRE")
+                canvas.before:
+                    Color:
+                        rgba: 0.7, 0.1, 0.1, 1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [12]
+                color: 1, 1, 1, 1
 
             Button:
                 text: "MEDICAL"
-                background_normal: ""
-                background_color: 0,0.6,0,1
+                background_color: 0.7, 0.1, 0.1, 1
+                background_normal: ''
+                font_size: 16
+                bold: True
                 on_release: root.on_sos_pressed("MEDICAL")
+                canvas.before:
+                    Color:
+                        rgba: 0.7, 0.1, 0.1, 1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [12]
+                color: 1, 1, 1, 1
 
     # Side Dashboard (hidden by default)
     BoxLayout:
@@ -649,10 +707,43 @@ ScreenManager:
         spacing: 10
         canvas.before:
             Color:
-                rgba: 1,1,1,1
+                rgba: 0.2, 0.2, 0.2, 1
             Rectangle:
                 pos: self.pos
                 size: self.size
+
+         # Menu header with close button
+        BoxLayout:
+            size_hint_y: None
+            height: 50
+            spacing: 10
+
+            Label:
+                text: "MENU"
+                font_size: 20
+                bold: True
+                color: 1,1,1,1
+                halign: "left"
+                valign: "middle"
+                text_size: self.size
+
+            Button:
+                text: "X"
+                size_hint_x: None
+                width: 40
+                background_color: 0,0,0,0
+                background_normal: ''
+                font_size: 20
+                bold: True
+                canvas.before:
+                    Color:
+                        rgba: 0.8, 0.1, 0.1, 1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [8]
+                color: 1, 1, 1, 1
+                on_release: root.toggle_dashboard()
 
         Button:
             text: "Contacts"
@@ -1643,4 +1734,5 @@ class SpamScreen(Screen):
     pass
 
 if __name__ == "__main__":
+
     LoginApp().run()
