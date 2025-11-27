@@ -27,8 +27,8 @@ import json
 class LoadingScreen(Screen):
     """Screen displayed for a fixed duration before LoginScreen."""
     def on_enter(self, *args):
-        # Schedule the transition to the login screen after 3 seconds (3.0)
-        Clock.schedule_once(self.switch_to_login, 3.0)
+        # Schedule the transition to the login screen after 4 seconds (3.0)
+        Clock.schedule_once(self.switch_to_login, 4.0)
 
     def switch_to_login(self, dt):
         """Switches the screen manager to the login screen."""
@@ -432,7 +432,7 @@ ScreenManager:
     BoxLayout:
         orientation: "vertical"
 
-        # Top bar
+    # Top bar
         BoxLayout:
             size_hint_y: None
             height: 60
@@ -445,15 +445,15 @@ ScreenManager:
                     pos: self.pos
                     size: self.size
 
-             # Logo (clickable to open menu)
+            # Logo button (opens menu)
             Button:
                 size_hint_x: None
                 width: 50
                 background_normal: ""
-                background_color: 0,0,0,0
+                background_color: 0, 0, 0, 0
                 on_release: root.toggle_dashboard()
-                   
-                    Image:
+
+                Image:
                     source: "logo.png.jpg"
                     size_hint: None, None
                     size: 40, 40
@@ -465,7 +465,7 @@ ScreenManager:
                 text: "SAVE LIVES, SIGNAL ONCE"
                 font_size: 18
                 bold: True
-                color: 1,1,1,1
+                color: 1, 1, 1, 1
                 halign: "left"
                 valign: "middle"
                 text_size: self.size
@@ -490,6 +490,31 @@ ScreenManager:
                 size_hint: 1, 1
                 pos_hint: {"x":0, "y":0}
 
+                        # ---------------- INTERACTIVE MAP TITLE ----------------
+            BoxLayout:
+                size_hint: None, None
+                width: root.width
+                height: 32
+                pos_hint: {"center_x": 0.5, "top": 0.99}   # just below map top bar
+                padding: [10, 0, 10, 0]
+
+                Label:
+                    text: "INTERACTIVE MAP AREA"
+                    font_size: 14
+                    bold: True
+                    color: 1,1,1,1
+                    halign: "center"
+                    valign: "middle"
+                    text_size: self.size
+                    canvas.before:
+                        Color:
+                            rgba: 0.7, 0.1, 0.1, 1
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+                            radius: [8, 8, 0, 0]
+
+
             # Search bar inside map
             MDTextField:
                 id: search_field
@@ -511,7 +536,7 @@ ScreenManager:
                 text: "Update"
                 size_hint: None, None
                 size: 85, 38
-                pos_hint: {"right": 0.98, "top": 0.98}
+                pos_hint: {"right": 0.98, "top": 0.88}
                 background_color: 0,0,0,0            
                 background_normal: ''
                 background_down: ''
@@ -525,50 +550,20 @@ ScreenManager:
                 color: 1, 1, 1, 1
                 on_release: root.open_map_editor()
 
-            Widget:
-            size_hint_y: None
-            height: 10
-
-        # INTERACTIVE MAP AREA Label
-        BoxLayout:
-            size_hint_y: None
-            height: 30
-            padding: [10, 0, 10, 0]
-            
-            Label:
-                text: "INTERACTIVE MAP AREA"
-                font_size: 14
-                bold: True
-                color: 1,1,1,1
-                halign: "center"
-                valign: "middle"
-                canvas.before:
-                    Color:
-                        rgba: 0.7, 0.1, 0.1, 1
-                    RoundedRectangle:
-                        pos: self.pos
-                        size: self.size
-                        radius: [8, 8, 0, 0]
-                
-
-        # One Tap + Spam Detector
+    # One Tap + Spam Detector
         BoxLayout:
             orientation: "horizontal"
             size_hint_y: None
-            height: 140
+            height: 160
             padding: [10, 5, 10, 5]
             spacing: 10
 
+            # ---------------- LEFT: ONE TAP BUTTON ----------------
             BoxLayout:
                 orientation: "vertical"
+                size_hint_x: 0.45       # ← important
                 padding: 5
-                spacing: 2
-                pos: root.pos
-                    size: root.size
-
-                    Widget:
-                        size_hint_y: None
-                        height: 10
+                spacing: 5
 
                 Label:
                     text: "One Tap Emergency"
@@ -577,20 +572,22 @@ ScreenManager:
                     font_size: 16
                     bold: True
                     color: 1,1,1,1
+                    halign: "center"
+                    valign: "middle"
+                    text_size: self.size
 
                 FloatLayout:
                     Button:
-                        text: ""
-                        height: 25
-                        font_size: 16
-                        bold: True
-                        color: 1,1,1,1
+                        text: "ONE-TAP"
                         size_hint: None, None
                         width: 120
                         height: 120
+                        pos_hint: {"center_x": 0.5, "center_y": 0.5}
+
+                        background_normal: ""
                         background_color: 0,0,0,0
-                        background_normal: ''
                         on_release: root.on_sos_pressed("ONE TAP EMERGENCY")
+
                         canvas.before:
                             Color:
                                 rgba: 0.85, 0.1, 0.1, 1
@@ -598,13 +595,15 @@ ScreenManager:
                                 pos: self.pos
                                 size: self.size
 
+            # ---------------- RIGHT: SPAM BOX ----------------
             BoxLayout:
                 id: spam_placeholder
-                orientation: "horizontal"
-                size_hint_y: None
-                height: 140
-                padding: [10, 5, 10, 5]
+                orientation: "vertical"   # IMPORTANT: so header is on top, button below, list bottom
+                size_hint_y: 1
+                height: 160
+                padding: 8
                 spacing: 10
+
                 canvas.before:
                     Color:
                         rgba: 0.2, 0.2, 0.2, 1
@@ -613,33 +612,36 @@ ScreenManager:
                         size: self.size
                         radius: [15]
 
-                
-
-                # ------- HEADER -------
+                # ------- HEADER (centered) -------
                 Label:
                     id: header
                     text: "Spam: 0 | Threats: 0"
                     size_hint_y: None
                     height: 30
-                    font_size: 12
+                    font_size: 14
                     bold: True
                     color: 1,1,1,1
                     halign: "center"
                     valign: "middle"
+                    text_size: self.size
+
                     on_touch_down:
                         if self.collide_point(*args[1].pos): app.root.get_screen('main').on_header_click()
 
-                # ------- BUTTON TO SPAM DETAIL -------
+                # ------- BUTTON TO SPAM DETAIL (centered) -------
                 Button:
                     text: "Open Spam Details"
                     size_hint_y: None
-                    height: dp(40)
+                    height: 35
+                    width: 140
+                    size_hint_x: None
+                    pos_hint: {"center_x": 0.5}
                     background_normal: ""
                     background_color: 0, 0.3, 0.6, 1
                     color: 1,1,1,1
                     on_release: app.root.current = "spam"
 
-                # ------- LIST SCROLLVIEW -------
+                # ------- LIST SCROLLVIEW (bottom) -------
                 ScrollView:
                     bar_width: 6
                     GridLayout:
@@ -647,8 +649,9 @@ ScreenManager:
                         cols: 1
                         size_hint_y: None
                         height: self.minimum_height
-                        row_default_height: 25
+                        row_default_height: 30
                         spacing: 5
+
 
         # SOS Categories
         GridLayout:
@@ -737,39 +740,6 @@ ScreenManager:
             Rectangle:
                 pos: self.pos
                 size: self.size
-
-         # Menu header with close button
-        BoxLayout:
-            size_hint_y: None
-            height: 50
-            spacing: 10
-
-            Label:
-                text: "MENU"
-                font_size: 20
-                bold: True
-                color: 1,1,1,1
-                halign: "left"
-                valign: "middle"
-                text_size: self.size
-
-            Button:
-                text: "X"
-                size_hint_x: None
-                width: 40
-                background_color: 0,0,0,0
-                background_normal: ''
-                font_size: 20
-                bold: True
-                canvas.before:
-                    Color:
-                        rgba: 0.8, 0.1, 0.1, 1
-                    RoundedRectangle:
-                        pos: self.pos
-                        size: self.size
-                        radius: [8]
-                color: 1, 1, 1, 1
-                on_release: root.toggle_dashboard()
 
         Button:
             text: "Contacts"
@@ -1760,6 +1730,4 @@ class SpamScreen(Screen):
     pass
 
 if __name__ == "__main__":
-
     LoginApp().run()
-
