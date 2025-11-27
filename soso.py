@@ -525,6 +525,32 @@ ScreenManager:
                 color: 1, 1, 1, 1
                 on_release: root.open_map_editor()
 
+            Widget:
+            size_hint_y: None
+            height: 10
+
+        # INTERACTIVE MAP AREA Label
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            padding: [10, 0, 10, 0]
+            
+            Label:
+                text: "INTERACTIVE MAP AREA"
+                font_size: 14
+                bold: True
+                color: 1,1,1,1
+                halign: "center"
+                valign: "middle"
+                canvas.before:
+                    Color:
+                        rgba: 0.7, 0.1, 0.1, 1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [8, 8, 0, 0]
+                
+
         # One Tap + Spam Detector
         BoxLayout:
             orientation: "horizontal"
@@ -1736,3 +1762,4 @@ class SpamScreen(Screen):
 if __name__ == "__main__":
 
     LoginApp().run()
+
